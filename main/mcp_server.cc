@@ -17,6 +17,7 @@
 #include "settings.h"
 #include "lvgl_theme.h"
 #include "lvgl_display.h"
+#include "music_service.h"
 
 #define TAG "MCP"
 
@@ -120,6 +121,92 @@ void McpServer::AddCommonTools() {
             });
     }
 #endif
+
+    // Music player tools
+    auto& music_service = MusicService::GetInstance();
+    music_service.Initialize("http://192.168.0.108:3000");
+
+    AddTool("media.music.search",
+        "Search for Vietnamese songs by title or artist name from the VN Music server.",
+        PropertyList({
+            Property("query", kPropertyTypeString)
+        }),
+        [&music_service](const PropertyList& properties) -> ReturnValue {
+            auto query = properties["query"].value<std::string>();
+            auto results = music_service.SearchSongs(query, 5);
+            
+            cJSON* json = cJSON_CreateArray();
+            for (const auto& song : results) {
+                cJSON* song_obj = cJSON_CreateObject();
+                cJSON_AddStringToObject(song_obj, "id", song.id.c_str());
+                cJSON_AddStringToObject(song_obj, "title", song.title.c_str());
+                cJSON_AddStringToObject(song_obj, "artist", song.artist.c_str());
+                cJSON_AddNumberToObject(song_obj, "duration", song.duration);
+                cJSON_AddItemToArray(json, song_obj);
+            }
+            return json;
+        });
+
+    AddTool("media.music.play_by_title",
+        "Play music by song title from the VN Music server. The device will play the song and display information on the screen.",
+        PropertyList({
+            Property("title", kPropertyTypeString)
+        }),
+        [&music_service](const PropertyList& properties) -> ReturnValue {
+            auto title = properties["title"].value<std::string>();
+            if (music_service.PlaySongByTitle(title)) {
+                return "Playing: " + title;
+            }
+            return "Failed to play: " + title;
+        });
+
+    AddTool("media.music.play_by_id",
+        "Play music by song ID.",
+        PropertyList({
+            Property("id", kPropertyTypeString)
+        }),
+        [&music_service](const PropertyList& properties) -> ReturnValue {
+            auto id = properties["id"].value<std::string>();
+            if (music_service.PlaySong(id)) {
+                return "Playing song ID: " + id;
+            }
+            return "Failed to play song";
+        });
+
+    AddTool("media.music.stop",
+        "Stop the current music playback.",
+        PropertyList(),
+        [&music_service](const PropertyList& properties) -> ReturnValue {
+            music_service.Stop();
+            return "Music stopped";
+        });
+
+    AddTool("media.music.get_status",
+        "Get the current music playback status.",
+        PropertyList(),
+        [&music_service](const PropertyList& properties) -> ReturnValue {
+            cJSON *json = cJSON_CreateObject();
+            cJSON_AddBoolToObject(json, "is_playing", music_service.IsPlaying());
+            return json;
+        });
+
+    AddTool("media.music.get_charts",
+        "Get the popular/trending songs from VN Music server.",
+        PropertyList(),
+        [&music_service](const PropertyList& properties) -> ReturnValue {
+            auto results = music_service.GetPopularSongs();
+            
+            cJSON* json = cJSON_CreateArray();
+            for (const auto& song : results) {
+                cJSON* song_obj = cJSON_CreateObject();
+                cJSON_AddStringToObject(song_obj, "id", song.id.c_str());
+                cJSON_AddStringToObject(song_obj, "title", song.title.c_str());
+                cJSON_AddStringToObject(song_obj, "artist", song.artist.c_str());
+                cJSON_AddNumberToObject(song_obj, "duration", song.duration);
+                cJSON_AddItemToArray(json, song_obj);
+            }
+            return json;
+        });
 
     // Restore the original tools list to the end of the tools list
     tools_.insert(tools_.end(), original_tools.begin(), original_tools.end());
