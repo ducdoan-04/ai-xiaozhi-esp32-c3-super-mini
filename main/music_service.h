@@ -85,7 +85,7 @@ private:
     std::function<void(const std::string& status)> status_callback_;
 
     // Blocking HTTP GET — returns full body (JSON only, not for large MP3s)
-    std::string HttpGet(const std::string& url);
+    std::string HttpGet(const std::string& url, size_t max_bytes = 16384);
 
     // Legacy / internal
     cJSON* MakeRequest(const std::string& method, cJSON* params);

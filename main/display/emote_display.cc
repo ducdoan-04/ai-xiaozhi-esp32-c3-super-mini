@@ -489,8 +489,10 @@ void EmoteDisplay::UpdateStatusBar(bool update_all)
         tzset();
         localtime_r(&now, &timeinfo);
 
-        char time_str[6];
-        snprintf(time_str, sizeof(time_str), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+        // char time_str[6];
+        // snprintf(time_str, sizeof(time_str), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+        char time_str[32];
+        snprintf(time_str, sizeof(time_str), "%02d/%02d • %02d:%02d", timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_hour, timeinfo.tm_min);
 
         DisplayLockGuard lock(this);
         gfx_label_set_text(g_obj_label_clock, time_str);

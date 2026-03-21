@@ -124,7 +124,7 @@ void McpServer::AddCommonTools() {
 
     // Music player tools
     auto& music_service = MusicService::GetInstance();
-    music_service.Initialize("http://192.168.0.108:3000");
+    music_service.Initialize("https://mp3.mrhung.io.vn/api");
 
     AddTool("media.music.search",
         "Search for Vietnamese songs by title or artist name from the VN Music server.",
@@ -133,7 +133,7 @@ void McpServer::AddCommonTools() {
         }),
         [&music_service](const PropertyList& properties) -> ReturnValue {
             auto query = properties["query"].value<std::string>();
-            auto results = music_service.SearchSongs(query, 5);
+            auto results = music_service.SearchSongs(query, 3);
             
             cJSON* json = cJSON_CreateArray();
             for (const auto& song : results) {
