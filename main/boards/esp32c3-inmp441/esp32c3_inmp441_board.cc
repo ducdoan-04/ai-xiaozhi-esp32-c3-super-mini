@@ -72,8 +72,7 @@ private:
 
     // ─── Button / Touch Initialization ────────────────────────
     void InitializeButtons() {
-        // TTP223-B (GPIO 0): Long press to start/stop listening
-        // TTP223 outputs HIGH when touched (active HIGH)
+        // TTP223-B (GPIO 0): Push-to-Talk (active HIGH: HIGH=touched)
         touch_button_b_.OnPressDown([this]() {
             Application::GetInstance().StartListening();
         });
@@ -81,11 +80,30 @@ private:
             Application::GetInstance().StopListening();
         });
 
-        // TTP223-A (GPIO 9): Double click to abort current AI response
+        // TTP223-A (GPIO 9): Dasai Mochi face  (active_high=true)
+        // ⚠ TTP223-A output: HIGH khi idle, LOW khi chạm → INVERTED vs normal
+        //   Với active_high=true:
+        //     PressUp   = GPIO LOW  = người dùng ĐANG CHẠM  → Hiện mặt
+        //     PressDown = GPIO HIGH = người dùng VỪA THẢ    → Ẩn mặt
+        touch_button_a_.OnPressUp([this]() {
+            ESP_LOGI(TAG, "TTP223-A: chạm → Dasai Mochi ON");
+            auto display = Board::GetInstance().GetDisplay();
+            if (display) {
+                display->ShowDasaiFace(true);
+            }
+        });
+        touch_button_a_.OnPressDown([this]() {
+            ESP_LOGI(TAG, "TTP223-A: thả → Dasai Mochi OFF");
+            auto display = Board::GetInstance().GetDisplay();
+            if (display) {
+                display->ShowDasaiFace(false);
+            }
+        });
+
+        // Double-click TTP223-A: ngắt AI đang nói
         touch_button_a_.OnDoubleClick([this]() {
-            auto& app = Application::GetInstance();
-            ESP_LOGI(TAG, "Button A double-click - abort AI response");
-            app.AbortSpeaking(kAbortReasonNone);
+            ESP_LOGI(TAG, "TTP223-A: double-click → abort AI");
+            Application::GetInstance().AbortSpeaking(kAbortReasonNone);
         });
     }
 

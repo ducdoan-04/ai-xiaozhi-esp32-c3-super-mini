@@ -39,6 +39,7 @@ public:
     virtual Theme* GetTheme() { return current_theme_; }
     virtual void UpdateStatusBar(bool update_all = false);
     virtual void SetPowerSaveMode(bool on);
+    virtual void ShowDasaiFace(bool show) {}  // Dasai Mochi GIF face overlay
 
     inline int width() const { return width_; }
     inline int height() const { return height_; }

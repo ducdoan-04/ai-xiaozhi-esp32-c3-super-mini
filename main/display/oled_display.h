@@ -21,6 +21,12 @@ private:
     lv_obj_t* side_bar_ = nullptr;
     lv_obj_t *emotion_label_ = nullptr;
     lv_obj_t* chat_message_label_ = nullptr;
+    lv_obj_t* dasai_overlay_    = nullptr;  // Dasai Mochi overlay container
+    lv_obj_t* dasai_img_        = nullptr;  // LVGL image widget for animation
+    lv_timer_t* dasai_anim_timer_ = nullptr; // Timer for sequence animation
+    int dasai_anim_frame_       = 0;        // Current frame index
+    
+    static void DasaiAnimTimerCb(lv_timer_t* timer);
 
     virtual bool Lock(int timeout_ms = 0) override;
     virtual void Unlock() override;
@@ -35,6 +41,7 @@ public:
     virtual void SetChatMessage(const char* role, const char* content) override;
     virtual void SetEmotion(const char* emotion) override;
     virtual void SetTheme(Theme* theme) override;
+    virtual void ShowDasaiFace(bool show) override;
 };
 
 #endif // OLED_DISPLAY_H

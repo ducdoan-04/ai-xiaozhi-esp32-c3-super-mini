@@ -394,3 +394,70 @@ void OledDisplay::SetTheme(Theme* theme) {
     auto screen = lv_screen_active();
     lv_obj_set_style_text_font(screen, text_font, 0);
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// ShowDasaiFace: Phát GIF "Dasai Mochi" (vuive.gif) khi nhấn TTP223-A
+//
+//   Nhấn  → Overlay đen + GIF animation chạy full screen
+//   Thả   → Dừng GIF, ẩn overlay, màn hình chờ chat trở lại
+// ─────────────────────────────────────────────────────────────────────
+
+#include "dasai_frames.h"
+
+void OledDisplay::DasaiAnimTimerCb(lv_timer_t* timer) {
+    OledDisplay* display = (OledDisplay*)lv_timer_get_user_data(timer);
+    if (display->dasai_img_) {
+        // Chuyển sang frame tiếp theo
+        display->dasai_anim_frame_ = (display->dasai_anim_frame_ + 1) % DASAI_FRAME_COUNT;
+        lv_image_set_src(display->dasai_img_, dasai_frames_dsc[display->dasai_anim_frame_]);
+    }
+}
+
+void OledDisplay::ShowDasaiFace(bool show) {
+    DisplayLockGuard lock(this);
+
+    if (show) {
+        // ── Tạo overlay lần đầu ────────────────────────────────────
+        if (dasai_overlay_ == nullptr) {
+            auto screen = lv_screen_active();
+
+            // Nền đen toàn màn hình
+            dasai_overlay_ = lv_obj_create(screen);
+            lv_obj_set_size(dasai_overlay_, LV_HOR_RES, LV_VER_RES);
+            lv_obj_set_pos(dasai_overlay_, 0, 0);
+            lv_obj_set_style_bg_color(dasai_overlay_, lv_color_black(), 0);
+            lv_obj_set_style_bg_opa(dasai_overlay_, LV_OPA_COVER, 0);
+            lv_obj_set_style_border_width(dasai_overlay_, 0, 0);
+            lv_obj_set_style_pad_all(dasai_overlay_, 0, 0);
+            lv_obj_set_style_radius(dasai_overlay_, 0, 0);
+            lv_obj_set_scrollbar_mode(dasai_overlay_, LV_SCROLLBAR_MODE_OFF);
+
+            // Tạo widget hiển thị ảnh (sẽ cập nhật liên tục)
+            dasai_img_ = lv_image_create(dasai_overlay_);
+            lv_obj_center(dasai_img_);
+
+            // Khởi tạo timer để vẽ animation (66ms ~ 15 fps -> Tốc độ chậm bằng 1/2)
+            dasai_anim_timer_ = lv_timer_create(DasaiAnimTimerCb, 66, this);
+            lv_timer_pause(dasai_anim_timer_); // Dừng tạm thời
+        }
+
+        // Đẩy overlay lên foreground
+        lv_obj_remove_flag(dasai_overlay_, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_to_index(dasai_overlay_, -1);
+
+        // Bắt đầu animation sequence
+        dasai_anim_frame_ = 0;
+        lv_image_set_src(dasai_img_, dasai_frames_dsc[0]);
+        if (dasai_anim_timer_) {
+            lv_timer_resume(dasai_anim_timer_);
+        }
+    } else {
+        // ── Dừng animation và ẩn overlay ────────────────────────────────
+        if (dasai_anim_timer_) {
+            lv_timer_pause(dasai_anim_timer_);
+        }
+        if (dasai_overlay_ != nullptr) {
+            lv_obj_add_flag(dasai_overlay_, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
